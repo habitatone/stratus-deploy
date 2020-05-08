@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Stratus HabitatOne Deployment
+name: stratus
+version: 1.0.3

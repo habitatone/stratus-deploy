@@ -1,0 +1,238 @@
+---
+# Creates a Service to connect to the headless pods
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: stratus
+    tier: stratus-ogc-frontend
+  name: stratus-ogc-lb
+spec:
+  type: LoadBalancer
+  selector:
+    tier: stratus-ogc-backend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+# Creates a Service to connect to the web ui pod(s)
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: stratus
+    tier: stratus-ui-frontend
+  name: stratus-ui-lb
+spec:
+  type: LoadBalancer
+  selector:
+    tier: stratus-ui-backend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+# Creates an Ingress that connects an http call to the correct Service
+# Everything goes the the headless pods except /geoserver/web
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: stratus-ingress
+  labels:
+    app: stratus
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /geoserver/web
+        backend:
+          serviceName: stratus-ui-lb
+          servicePort: 80
+      - path: /geoserver/rest
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/gwc
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wms
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wfs
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wfst
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wmts
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wps
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/j_spring_security_logout
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/j_spring_security_check
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wms
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+      - path: /geoserver/wfs
+        backend:
+          serviceName: stratus-ogc-lb
+          servicePort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stratus-ogc-deployment
+spec:
+  # TODO: Remove following line and replace with HorizontalPodAutoscaler
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: stratus
+        tier: stratus-ogc-backend
+    spec:
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: {{ .Values.stratus.container.secretKey | default "" }}
+      containers:
+        - name: stratus-ogc
+          env:
+            # This is what separates the headless from ui
+            - name: STRATUS_ADMIN_ENABLED
+              value: "false"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "lettuce-manual"
+{{- if .Values.stratus.rootPath }}
+            - name: SERVER_CONTEXTPATH
+              value: {{ .Values.stratus.rootPath | trimSuffix "/" }}/
+{{- end }}
+            - name: GWC_ENABLED
+              value: "true"
+            - name: STRATUS_CATALOG_REDIS_CACHING_USE_CACHING_CALLBACK
+              value: "{{ .Values.redis.cache.enabled | default true}}"
+            - name: STRATUS_CATALOG_REDIS_CACHING_USE_PARALLEL_QUERIES
+              value: "{{ .Values.redis.cache.parallel | default true }}"
+            - name: STRATUS_CATALOG_REDIS_MANUAL_HOST
+              value: {{ .Values.redis.host }}
+            - name: STRATUS_CATALOG_REDIS_MANUAL_PORT
+              value: "{{ .Values.redis.port | default 6379 }}"
+{{- if .Values.redis.password }}
+            - name: STRATUS_CATALOG_REDIS_MANUAL_PASSWORD
+              value: "{{ .Values.redis.password }}"
+{{- end }}
+          image: {{ .Values.stratus.container.image | default "stratus"}}:{{ .Values.stratus.container.tag | default "latest"}}
+          imagePullPolicy: Always
+          command: ["java",
+                "-jar",
+                "/stratus-application-exec.jar"
+                ]
+          resources:
+            requests:
+              memory: {{ .Values.stratus.ogc.resources.mem }}
+              cpu: {{ .Values.stratus.ogc.resources.cpu }}
+            limits:
+              memory: {{ .Values.stratus.ogc.resources.maxMem }}
+              cpu: {{ .Values.stratus.ogc.resources.maxCpu }}
+          ports:
+            - containerPort: 8080
+          securityContext:
+            privileged: false
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.stratus.rootPath | default "/" | trimSuffix "/" }}/rest/manage/health
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+  selector:
+    matchLabels:
+      app: stratus
+      tier: stratus-ogc-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stratus-ui-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: stratus
+        tier: stratus-ui-backend
+    spec:
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: {{ .Values.stratus.container.secretKey | default "" }}
+      containers:
+        - name: stratus-ui
+          env:
+            # This is what separates the headless from ui
+            - name: STRATUS_ADMIN_ENABLED
+              value: "true"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "lettuce-manual"
+{{- if .Values.stratus.rootPath }}
+            - name: SERVER_CONTEXTPATH
+              value: {{ .Values.stratus.rootPath | trimSuffix "/" }}/
+{{- end }}
+            - name: GWC_ENABLED
+              value: "true"
+            - name: STRATUS_CATALOG_REDIS_CACHING_USE_CACHING_CALLBACK
+              value: "{{ .Values.redis.cache.enabled | default true}}"
+            - name: STRATUS_CATALOG_REDIS_CACHING_USE_PARALLEL_QUERIES
+              value: "{{ .Values.redis.cache.parallel | default true }}"
+            - name: STRATUS_CATALOG_REDIS_MANUAL_HOST
+              value: {{ .Values.redis.host }}
+            - name: STRATUS_CATALOG_REDIS_MANUAL_PORT
+              value: "{{ .Values.redis.port | default 6379 }}"
+{{- if .Values.redis.password }}
+            - name: STRATUS_CATALOG_REDIS_MANUAL_PASSWORD
+              value: "{{ .Values.redis.password }}"
+{{- end }}
+          image: {{ .Values.stratus.container.image | default "stratus"}}:{{ .Values.stratus.container.tag | default "latest"}}
+          imagePullPolicy: Always
+          command: ["java",
+                "-jar",
+                "/stratus-application-exec.jar"
+                ]
+          resources:
+            requests:
+              memory: {{ .Values.stratus.ogc.resources.mem }}
+              cpu: {{ .Values.stratus.ogc.resources.cpu }}
+            limits:
+              memory: {{ .Values.stratus.ogc.resources.maxMem }}
+              cpu: {{ .Values.stratus.ogc.resources.maxCpu }}
+          ports:
+            - containerPort: 8080
+          securityContext:
+            privileged: false
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.stratus.rootPath | default "/" | trimSuffix "/" }}/rest/manage/health
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+  selector:
+    matchLabels:
+      app: stratus
+      tier: stratus-ui-backend
