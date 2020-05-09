@@ -44,7 +44,8 @@ metadata:
   labels:
     app: stratus
   annotations:
-    ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
   - http:
@@ -113,7 +114,7 @@ spec:
     spec:
       restartPolicy: Always
       imagePullSecrets:
-        - name: {{ .Values.stratus.container.secretKey | default "" }}
+        - name: {{ .Values.stratus.container.secretKey | default "notasecret" }}
       containers:
         - name: stratus-ogc
           env:
@@ -128,10 +129,12 @@ spec:
 {{- end }}
             - name: GWC_ENABLED
               value: "true"
+            - name: GEOWEBCACHE_CACHE_DIR
+              value: "/tmp"
             - name: STRATUS_CATALOG_REDIS_CACHING_USE_CACHING_CALLBACK
-              value: "{{ .Values.redis.cache.enabled | default true}}"
+              value: "{{ .Values.redis.cache_callback | default true}}"
             - name: STRATUS_CATALOG_REDIS_CACHING_USE_PARALLEL_QUERIES
-              value: "{{ .Values.redis.cache.parallel | default true }}"
+              value: "{{ .Values.redis.cache_parallel | default true }}"
             - name: STRATUS_CATALOG_REDIS_MANUAL_HOST
               value: {{ .Values.redis.host }}
             - name: STRATUS_CATALOG_REDIS_MANUAL_PORT
@@ -143,6 +146,7 @@ spec:
           image: {{ .Values.stratus.container.image | default "stratus"}}:{{ .Values.stratus.container.tag | default "latest"}}
           imagePullPolicy: Always
           command: ["java",
+                "-Ds3.properties.location=/tmp/s3.properties",
                 "-jar",
                 "/stratus-application-exec.jar"
                 ]
@@ -157,12 +161,12 @@ spec:
             - containerPort: 8080
           securityContext:
             privileged: false
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.stratus.rootPath | default "/" | trimSuffix "/" }}/rest/manage/health
-              port: 8080
-            initialDelaySeconds: 10
-            timeoutSeconds: 1
+          #readinessProbe:
+            #httpGet:
+            #  path: {{ .Values.stratus.rootPath | default "/" | trimSuffix "/" }}/geoserver/rest/about/system-status
+            #  port: 8080
+            #initialDelaySeconds: 10
+            #timeoutSeconds: 1
   selector:
     matchLabels:
       app: stratus
@@ -182,7 +186,7 @@ spec:
     spec:
       restartPolicy: Always
       imagePullSecrets:
-        - name: {{ .Values.stratus.container.secretKey | default "" }}
+        - name: {{ .Values.stratus.container.secretKey | default "notasecret" }}
       containers:
         - name: stratus-ui
           env:
@@ -197,10 +201,12 @@ spec:
 {{- end }}
             - name: GWC_ENABLED
               value: "true"
+            - name: GEOWEBCACHE_CACHE_DIR
+              value: "/tmp"
             - name: STRATUS_CATALOG_REDIS_CACHING_USE_CACHING_CALLBACK
-              value: "{{ .Values.redis.cache.enabled | default true}}"
+              value: "{{ .Values.redis.cache_callback | default true}}"
             - name: STRATUS_CATALOG_REDIS_CACHING_USE_PARALLEL_QUERIES
-              value: "{{ .Values.redis.cache.parallel | default true }}"
+              value: "{{ .Values.redis.cache_parallel | default true }}"
             - name: STRATUS_CATALOG_REDIS_MANUAL_HOST
               value: {{ .Values.redis.host }}
             - name: STRATUS_CATALOG_REDIS_MANUAL_PORT
@@ -212,6 +218,7 @@ spec:
           image: {{ .Values.stratus.container.image | default "stratus"}}:{{ .Values.stratus.container.tag | default "latest"}}
           imagePullPolicy: Always
           command: ["java",
+                "-Ds3.properties.location=/tmp/s3.properties",
                 "-jar",
                 "/stratus-application-exec.jar"
                 ]
@@ -226,12 +233,12 @@ spec:
             - containerPort: 8080
           securityContext:
             privileged: false
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.stratus.rootPath | default "/" | trimSuffix "/" }}/rest/manage/health
-              port: 8080
-            initialDelaySeconds: 10
-            timeoutSeconds: 1
+            #readinessProbe:
+            #httpGet:
+            #  path: {{ .Values.stratus.rootPath | default "/" | trimSuffix "/" }}/geoserver/rest/about/system-status
+            #  port: 8080
+            #initialDelaySeconds: 10
+            #timeoutSeconds: 1
   selector:
     matchLabels:
       app: stratus

@@ -63,5 +63,6 @@ RUN cd /tmp/stratus/src \
 FROM amazoncorretto:11
 
 COPY --from=STRATUS_BUILDER /tmp/stratus/src/stratus-application/target/stratus-application-exec.jar .
+RUN touch /tmp/s3.properties
 
 ENTRYPOINT ["java", "-jar", "-Duser.timezone=GMT", "/stratus-application-exec.jar"]

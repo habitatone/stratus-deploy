@@ -1,29 +1,29 @@
 redis:
   # This is from a GCP Memorystore on the same network
-  host: "10.18.18.203"
-  #cache:
-    #enabled: true
-    #parallel: true
+  host: "10.73.37.219"
+  #cache_callback: true
+  #cache_parallel: true
   #port: 6379
   #password: ""
 
 stratus:
   #rootPath: "/"
-  #container:
+  container:
     #secretKey: ""
-    #image: "stratus"
-    #tag: "latest"
+    image: "gcr.io/stratus-gcp-0/stratus"
+    tag: "ubuntu"
   ogc:
     resources:
-      cpu: 0.25
-      maxCpu: 0.5
-      mem: 0.8G
-      maxMem: 1.0G
+      cpu: 0.8
+      maxCpu: 1.0
+      mem: 1.0G
+      maxMem: 1.5G
       #maxReplicas: 3
       #minReplicas: 1
   ui:
     resources:
-      cpu: 0.25
-      maxCpu: 0.5
-      mem: 0.8G
-      maxMem: 1.0G
+    resources:
+      cpu: 0.8
+      maxCpu: 1.0
+      mem: 1.0G
+      maxMem: 1.5G

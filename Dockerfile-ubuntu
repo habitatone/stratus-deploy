@@ -23,5 +23,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends openjdk-11-jre-headless
 
 COPY --from=STRATUS_BUILDER /tmp/stratus/src/stratus-application/target/stratus-application-exec.jar .
+RUN touch /tmp/s3.properties
 
 ENTRYPOINT ["java", "-jar", "-Duser.timezone=GMT", "/stratus-application-exec.jar"]
