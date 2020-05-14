@@ -1,0 +1,35 @@
+redis:
+  # This can be the IP of a GCP Memorystore on the same network
+  # or a Redis instance on your k8s cluster
+  host: "redis-master"
+  #cache_callback: true
+  #cache_parallel: true
+  #port: 6379
+  #password: ""
+
+stratus:
+  # TODO: rootPath is not fully supported
+  #rootPath: "/"
+  container:
+    # secretKey might be needed if pulling from a private repo
+    #secretKey: ""
+    image: "habitatone/stratus"
+    tag: "latest"
+
+  # ogc is the "backend" of Stratus, and handles most of the calls to Geoserver
+  ogc:
+    resources:
+      cpu: 0.8
+      maxCpu: 1.0
+      mem: 1.0G
+      maxMem: 1.5G
+      # TODO: Autoscaler not fully configured
+      #maxReplicas: 3
+      #minReplicas: 1
+  ui:
+    resources:
+    resources:
+      cpu: 0.8
+      maxCpu: 1.0
+      mem: 1.0G
+      maxMem: 1.5G
