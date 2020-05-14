@@ -1,12 +1,14 @@
-# stratus-helm
+# stratus-deploy
 
-[Stratus](https://github.com/planetlabs/stratus) is a cloud-enabled repackaging of [GeoServer](http://geoserver.org/) and should be 100% compatable with GeoServer. Stratus is currently based on GeoServer 2.16.0.
+This is a set of deployment scripts for building a docker container and deploying [Stratus](https://github.com/planetlabs/stratus).
 
-This is a set of deployment scripts for building and deploying [Stratus](https://github.com/planetlabs/stratus).
-The current goal of this project is to get Stratus accepted into the Google Cloud Marketplace, and untimately ease the transition of GeoServer into the cloud. Despite the GCP focus of the documentation, this should be easily adaptable to any cloud (or k8s) provider.
+[Stratus](https://github.com/planetlabs/stratus) is a cloud-native repackaging of [GeoServer](http://geoserver.org/) and should be 100% compatable with GeoServer. Stratus is currently based on GeoServer 2.16.0.
+
+The current goal of this project is to untimately ease the transition of GeoServer into the cloud. We will be targeting Google Cloud and GKE, but some testing is done with [kind](https://kind.sigs.k8s.io/) and it shouldn't take much to get things working on other Kubernetes clusters.
 
 ## Requirements
 
+  - Kubernetes
   - Ingress Controller (Already included in GKE)
   - Redis (or GCP Memorystore)
 
@@ -26,9 +28,17 @@ export REDIS_PASSWORD=$(kubectl get secret --namespace default redis -o jsonpath
 ```
 
 ## Install
+
+Once Redis (or GCP Memorystor) is set up, installing Stratus can be done with helm:
+
 ```
 cd stratus
 cp sample-values.yaml values.yaml
 # edit values.yaml
 helm install -f values.yaml stratus .
 ```
+
+## GKE Considerations
+
+3 n1 nodes are recommended. See `make-gke-cluster.sh` for an example.
+
