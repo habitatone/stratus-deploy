@@ -14,7 +14,7 @@ RUN cd /tmp \
   && git checkout ${STRATUS_COMMIT}
 
 RUN cd /tmp/stratus/src \
-  && mvn clean package -Dgdal
+  && mvn clean package -Dgdal -DskipTests
 
 
 FROM ubuntu:bionic
